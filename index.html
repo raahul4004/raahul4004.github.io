@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raahul Muthukrishnan — ML Research</title>
+<meta name="description" content="ML research in computer vision and multimodal models. I work on why models stop working on data they have not seen.">
+
+<meta property="og:title" content="Raahul Muthukrishnan — ML Research">
+<meta property="og:description" content="Computer vision, multimodal models, and why detectors stop working on data they haven't seen.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://raahul4004.github.io/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   TOKENS
+   Light is the default; dark is a *selected* set of steps for the
+   dark surface, declared under both the OS media query and the
+   explicit toggle scope so the toggle wins either direction.
+   ============================================================ */
+:root{
+  --bg:#fbfbf9;
+  --bg-2:#f4f3ef;
+  --card:#ffffff;
+  --ink:#14140f;
+  --ink-2:#4d4c46;
+  --ink-3:#7d7c74;
+  --rule:#e4e2da;
+  --rule-2:#d6d4ca;
+
+  /* Chrome accents — UI only, never data marks. */
+  --a1:#4f46e5;
+  --a2:#0891b2;
+  --glow:rgba(79,70,229,.10);
+  --hl:rgba(31,95,184,.20);
+
+  /* Data roles — validated against this page's surfaces. */
+  --series:#2a78d6;
+  --demote:#898781;
+  --axis:#c3c2b7;
+
+  --grid:rgba(20,20,15,.055);
+  --shadow:0 1px 2px rgba(20,20,15,.05), 0 8px 24px -12px rgba(20,20,15,.14);
+  --shadow-lift:0 2px 4px rgba(20,20,15,.06), 0 18px 44px -16px rgba(20,20,15,.22);
+  --max:64rem;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    --bg:#0c0c0f; --bg-2:#131318; --card:#15151b;
+    --ink:#f2f1ee; --ink-2:#a9a8a2; --ink-3:#77766f;
+    --rule:#26262e; --rule-2:#32323b;
+    --a1:#818cf8; --glow:rgba(129,140,248,.13); --hl:rgba(129,140,248,.26);
+    --series:#3987e5; --demote:#898781; --axis:#383835;
+    --grid:rgba(255,255,255,.045);
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    --shadow-lift:0 2px 4px rgba(0,0,0,.5), 0 18px 44px -16px rgba(0,0,0,.75);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c0c0f; --bg-2:#131318; --card:#15151b;
+  --ink:#f2f1ee; --ink-2:#a9a8a2; --ink-3:#77766f;
+  --rule:#26262e; --rule-2:#32323b;
+  --a1:#818cf8; --glow:rgba(129,140,248,.13); --hl:rgba(129,140,248,.26);
+  --series:#3987e5; --demote:#898781; --axis:#383835;
+  --grid:rgba(255,255,255,.045);
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  --shadow-lift:0 2px 4px rgba(0,0,0,.5), 0 18px 44px -16px rgba(0,0,0,.75);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; -webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Inter",system-ui,-apple-system,sans-serif;
+  font-size:1rem; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+.wrap{max-width:var(--max); margin:0 auto; padding:0 1.5rem}
+a{color:inherit; text-decoration:none}
+h1,h2,h3,h4{margin:0; line-height:1.15; letter-spacing:-.022em; font-weight:700}
+.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+/* ============================================================ NAV */
+nav{
+  position:fixed; top:0; left:0; right:0; z-index:60;
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom:1px solid transparent;
+  transition:border-color .25s, background .25s;
+}
+nav.stuck{border-bottom-color:var(--rule)}
+.nav-in{
+  max-width:var(--max); margin:0 auto; padding:.7rem 1.5rem;
+  display:flex; align-items:center; gap:1rem;
+}
+.brand{
+  font-size:.8125rem; font-weight:500; letter-spacing:-.005em;
+  margin-right:auto; color:var(--ink-3);
+}
+.brand:hover{color:var(--ink-2)}
+.brand span{color:var(--ink-3)}
+.nav-links{display:flex; gap:.25rem}
+.nav-links a{
+  font-size:.8125rem; color:var(--ink-2); padding:.35rem .6rem;
+  border-radius:6px; font-weight:500; transition:color .18s, background .18s;
+}
+.nav-links a:hover{color:var(--ink); background:var(--bg-2)}
+.nav-links a.active{color:var(--ink); background:var(--bg-2)}
+.icon-btn{
+  display:grid; place-items:center; width:32px; height:32px;
+  border:1px solid var(--rule); border-radius:8px;
+  background:var(--card); color:var(--ink-2); cursor:pointer;
+  transition:transform .18s, color .18s, border-color .18s;
+}
+.icon-btn:hover{color:var(--ink); border-color:var(--rule-2); transform:translateY(-1px)}
+.icon-btn svg{width:15px; height:15px}
+#sun{display:none}
+:root[data-theme="dark"] #sun{display:block}
+:root[data-theme="dark"] #moon{display:none}
+@media (prefers-color-scheme:dark){
+  :root:where(:not([data-theme="light"])) #sun{display:block}
+  :root:where(:not([data-theme="light"])) #moon{display:none}
+}
+.progress{
+  position:absolute; bottom:-1px; left:0; height:2px; width:0%;
+  background:var(--a1);
+}
+
+/* ============================================================ HEADER
+   Name, one sentence of what I do, then facts as a definition list so
+   each one is scannable on its own line instead of a run-on. */
+header{padding:4.5rem 0 0}
+h1{font-size:1.875rem; font-weight:700; letter-spacing:-.022em}
+.role{
+  color:var(--ink-2); margin:.55rem 0 0;
+  font-size:1.0625rem; line-height:1.5; max-width:34rem;
+}
+.role b{color:var(--ink); font-weight:600}
+.facts{
+  margin:1.35rem 0 0; display:grid;
+  grid-template-columns:auto 1fr; gap:.3rem 1rem;
+  font-size:.875rem; align-items:baseline;
+}
+.facts dt{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-3); padding-top:.1rem;
+}
+.facts dd{margin:0; color:var(--ink-2)}
+.meta{
+  margin:1.35rem 0 0; padding-top:1.1rem; border-top:1px solid var(--rule);
+  display:flex; flex-wrap:wrap; gap:.45rem 1.1rem;
+  align-items:center; font-size:.9375rem;
+}
+.meta a{color:var(--a1); border-bottom:1px solid transparent}
+.meta a:hover{border-bottom-color:var(--a1)}
+.lnkbtn{
+  background:none; border:0; padding:0; cursor:pointer; font:inherit;
+  color:var(--ink-3); border-bottom:1px dashed var(--rule);
+}
+.lnkbtn:hover{color:var(--ink-2); border-bottom-color:var(--ink-3)}
+.mark{
+  background-image:linear-gradient(var(--hl),var(--hl));
+  background-repeat:no-repeat; background-size:100% .32em;
+  background-position:0 78%; padding:0 .04em;
+}
+
+/* ============================================================ SECTIONS */
+section{padding:5rem 0; border-bottom:1px solid var(--rule)}
+section.tight{padding-top:2.5rem; border-top:0}
+.eyebrow{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; font-weight:500; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--a1); margin:0 0 .7rem;
+}
+h2{font-size:clamp(1.625rem,3.4vw,2.125rem); font-weight:700; letter-spacing:-.028em}
+.sub{color:var(--ink-2); margin:.7rem 0 0; max-width:40rem; font-size:1.0625rem}
+.prose{max-width:38rem; margin-top:1.6rem}
+.prose p{margin:0 0 1rem; color:var(--ink-2)}
+.prose p:last-child{margin:0}
+.prose strong{color:var(--ink); font-weight:600}
+.prose .note{font-size:.8125rem; color:var(--ink-3); margin:-.8rem 0 1.35rem}
+
+/* Results table: the numbers a reader should get without scrolling or clicking.
+   A table rather than a figure — the NeurIPS-linked guidance notes a figure-based
+   main result is harder to read without the paper. */
+.res{
+  width:100%; border-collapse:collapse; margin:1.25rem 0 1.4rem;
+  font-size:.9375rem; font-variant-numeric:tabular-nums;
+}
+.res caption{
+  caption-side:top; text-align:left; color:var(--ink-3);
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; letter-spacing:.06em; text-transform:uppercase;
+  padding-bottom:.5rem;
+}
+.res th,.res td{padding:.45rem 0; border-bottom:1px solid var(--rule); text-align:left}
+.res th{font-weight:400; color:var(--ink-2)}
+.res td{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  color:var(--ink); font-weight:600; width:42%;
+}
+.res .qual{color:var(--ink-3); font-weight:400; font-size:.8125rem}
+
+/* ============================================================ CARDS */
+.grid{display:grid; gap:1rem; margin-top:2.25rem}
+.card{
+  background:var(--card); border:1px solid var(--rule);
+  border-radius:14px; padding:1.5rem 1.6rem;
+  box-shadow:var(--shadow); position:relative; overflow:hidden;
+  transition:transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s, border-color .25s;
+}
+.card::before{ /* accent hairline that wipes in on hover */
+  content:""; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--a1);
+  transform:scaleX(0); transform-origin:left;
+  transition:transform .4s cubic-bezier(.2,.7,.2,1);
+}
+.card:hover{transform:translateY(-4px); box-shadow:var(--shadow-lift); border-color:var(--rule-2)}
+.card:hover::before{transform:scaleX(1)}
+.card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:1rem}
+.card h3{font-size:1.1875rem; letter-spacing:-.02em}
+.badge{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; color:var(--ink-3); white-space:nowrap;
+  border:1px solid var(--rule); border-radius:999px; padding:.2rem .55rem;
+}
+.card > p{color:var(--ink-2); margin:.85rem 0 0; font-size:.9375rem}
+.tags{display:flex; flex-wrap:wrap; gap:.35rem; margin-top:1rem}
+.tag{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; color:var(--ink-2);
+  background:var(--bg-2); border:1px solid var(--rule);
+  border-radius:5px; padding:.2rem .45rem;
+}
+.repo{
+  display:inline-flex; align-items:center; gap:.35rem; margin-top:1.1rem;
+  font-size:.8125rem; font-weight:500; color:var(--a1);
+}
+.repo svg{width:13px; height:13px; transition:transform .2s}
+.repo:hover svg{transform:translate(2px,-2px)}
+
+/* ============================================================ STAT TILES */
+.tiles{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+  border-radius:10px; overflow:hidden; margin-top:1.35rem;
+}
+.tile{background:var(--card); padding:.95rem 1.05rem}
+.tile-v{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; font-size:1.5rem;
+  font-weight:600; line-height:1.05; display:block; color:var(--ink);
+}
+.tile-u{font-size:.8125rem; font-weight:500}
+.tile-l{display:block; margin-top:.35rem; font-size:.8125rem; color:var(--ink-3); line-height:1.4}
+
+/* ============================================================ CHARTS */
+figure{margin:1.6rem 0 0}
+figcaption{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--ink-3); margin-bottom:.2rem;
+}
+.fig-note{font-size:.875rem; color:var(--ink-2); margin:0 0 .7rem}
+.chart{width:100%; height:auto; overflow:visible; display:block}
+.bar-accent{fill:var(--series)}
+.bar-mute{fill:var(--demote)}
+.axis{stroke:var(--axis); stroke-width:1}
+.chart text{font-family:"JetBrains Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+.vlab{font-size:11px; fill:var(--ink-2)}
+.vlab-mute{font-size:11px; fill:var(--ink-3)}
+.glab,.glab-group{font-size:11px; fill:var(--ink-3); text-anchor:end}
+.glab-group{fill:var(--ink-2)}
+/* Bars grow from the axis when the figure scrolls into view. */
+.chart .bar-accent,.chart .bar-mute{
+  transform:scaleX(0); transform-origin:104px 0; transform-box:view-box;
+  transition:transform .85s cubic-bezier(.2,.75,.2,1);
+}
+.chart text{opacity:0; transition:opacity .4s ease .5s}
+.in .chart .bar-accent,.in .chart .bar-mute{transform:scaleX(1)}
+.in .chart text{opacity:1}
+.chart .bar-mute{transition-delay:.05s}
+.chart .bar-accent{transition-delay:.18s}
+.legend{
+  display:flex; gap:1.1rem; flex-wrap:wrap; margin-top:.6rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; color:var(--ink-3);
+}
+.legend span{display:flex; align-items:center; gap:.4rem}
+.key{width:10px; height:10px; border-radius:2px; flex:none}
+.key-accent{background:var(--series)}
+.key-mute{background:var(--demote)}
+/* Data tables inside a project figure. Previously scoped to details.tview;
+   the disclosure wrapper was removed (readers rarely open them), so these
+   now target the bare table. */
+figure table{
+  border-collapse:collapse; margin:.9rem 0 0; font-size:.8125rem;
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums;
+}
+figure table th,figure table td{
+  text-align:left; padding:.3rem 1.1rem .3rem 0;
+  border-bottom:1px solid var(--rule); color:var(--ink-2); font-weight:400;
+}
+figure table th{
+  color:var(--ink-3); font-size:.6875rem;
+  text-transform:uppercase; letter-spacing:.06em;
+}
+figure table td:last-child{color:var(--ink)}
+
+/* ============================================================ TIMELINE */
+.tl{margin-top:2.25rem; position:relative; padding-left:1.4rem}
+.tl::before{content:""; position:absolute; left:3px; top:.4rem; bottom:.4rem; width:1px; background:var(--rule)}
+.tl-item{position:relative; padding-bottom:1.9rem}
+.tl-item:last-child{padding-bottom:0}
+.tl-item::before{
+  content:""; position:absolute; left:-1.4rem; top:.45rem;
+  width:7px; height:7px; border-radius:50%;
+  background:var(--bg); border:2px solid var(--rule-2);
+}
+.tl-item.now::before{background:var(--a1); border-color:var(--a1); box-shadow:0 0 0 3px var(--glow)}
+.tl-top{display:flex; flex-wrap:wrap; justify-content:space-between; gap:.5rem; align-items:baseline}
+.tl-item h3{font-size:1.0625rem}
+.tl-when{font-family:"JetBrains Mono",ui-monospace,monospace; font-size:.75rem; color:var(--ink-3)}
+.tl-where{color:var(--a1); font-size:.875rem; font-weight:500; margin:.2rem 0 0}
+.tl-item p.d{color:var(--ink-2); font-size:.9375rem; margin:.5rem 0 0}
+
+/* ============================================================ SKILLS */
+.skills{display:grid; gap:1rem; margin-top:2.25rem; grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+.sk{background:var(--card); border:1px solid var(--rule); border-radius:12px; padding:1.15rem 1.25rem}
+.sk h4{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.6875rem; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--a1); font-weight:500; margin-bottom:.7rem;
+}
+.sk p{margin:0; font-size:.875rem; color:var(--ink-2); line-height:1.55}
+
+/* ============================================================ FOOTER */
+footer{padding:4rem 0 3rem}
+.foot{
+  display:flex; flex-wrap:wrap; gap:1rem; align-items:center;
+  justify-content:space-between;
+}
+.foot p{margin:0; color:var(--ink-2); font-size:.9375rem}
+.foot-links{display:flex; gap:1.1rem; font-size:.875rem}
+.foot-links a{color:var(--ink-2)}
+.foot-links a:hover{color:var(--a1)}
+#toast{
+  position:fixed; left:50%; bottom:1.5rem; transform:translate(-50%,150%);
+  background:var(--ink); color:var(--bg); font-size:.8125rem; font-weight:500;
+  padding:.55rem 1rem; border-radius:8px; z-index:90;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1);
+}
+#toast.show{transform:translate(-50%,0)}
+
+/* ============================================================ REVEAL */
+.rv{opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s cubic-bezier(.2,.7,.2,1)}
+.rv.in{opacity:1; transform:none}
+
+@media (max-width:54rem){
+  /* Stack the hero: spectrum first, so the visual still lands immediately,
+     then the headline at full measure instead of a squeezed column. */
+}
+@media (max-width:40rem){
+  .nav-links{display:none}
+  header{padding:5.5rem 0 2.75rem}
+  h1{font-size:clamp(1.875rem,8vw,2.5rem)}
+  .strip{font-size:.6875rem}
+  section{padding:3.5rem 0}
+  .card{padding:1.25rem}
+}
+/* Anyone who asks for less motion gets the finished state, immediately. */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001s!important; transition-duration:.001s!important}
+  .rv{opacity:1; transform:none}
+  .chart .bar-accent,.chart .bar-mute{transform:scaleX(1)}
+  .chart text{opacity:1}
+  #field{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-in">
+    <a class="brand" href="#top">Raahul <span>Muthukrishnan</span></a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#work">Work</a>
+      <a href="#path">Experience</a>
+    </div>
+    <button class="icon-btn" id="theme" aria-label="Toggle colour theme">
+      <svg id="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg id="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>
+    </button>
+  </div>
+  <div class="progress" id="bar"></div>
+</nav>
+
+<header id="top">
+  <div class="wrap">
+    <h1>Raahul Muthukrishnan</h1>
+    <p class="role">Applied Scientist Intern at <b>Amazon</b>, working on cross-generator robustness in AI-generated image detection.</p>
+    <dl class="facts">
+      <dt>Studying</dt><dd>MS, AI &amp; Machine Learning &mdash; Vellore Institute of Technology</dd>
+      <dt>Based in</dt><dd>Mumbai, India &middot; open to relocation and remote</dd>
+      <dt>Looking for</dt><dd>Research and ML engineering roles</dd>
+    </dl>
+    <p class="meta">
+      <a href="mailto:raahul4004@gmail.com">raahul4004@gmail.com</a>
+      <a href="https://github.com/raahul4004">GitHub</a>
+      <a href="https://linkedin.com/in/raahul404">LinkedIn</a>
+      <a href="assets/resume.pdf">Résumé</a>
+      <button id="copy" class="lnkbtn">copy email</button>
+    </p>
+  </div>
+</header>
+
+<section id="about" class="tight">
+  <div class="wrap">
+    <h2>About</h2>
+    <div class="prose">
+      <p>I work on detection of AI-generated images. A detector trained on one generator can score beautifully and then fall apart on a generator it has never seen, so I build the evaluations that catch it before anyone deploys it. Along the way I found that preprocessing differences between the real and generated halves of standard benchmarks were doing part of the work the models were credited for. I'd rather spend a week finding out a result is an artifact than a month building on top of it.</p>
+
+      <table class="res">
+        <caption>SRC-Net, measured under a confound-controlled protocol</caption>
+        <tbody>
+          <tr><th scope="row">Average precision, unseen generators</th><td>0.965</td></tr>
+          <tr><th scope="row">Trainable parameters</th><td>16.6M</td></tr>
+          <tr><th scope="row">Inference, per image</th><td>27.7 ms <span class="qual">(~2× faster than every baseline tested)</span></td></tr>
+          <tr><th scope="row">Baselines reproduced and benchmarked</th><td>10+</td></tr>
+        </tbody>
+      </table>
+      <p class="note">First-author manuscript in preparation.</p>
+
+      <p>I mostly learn by rebuilding things. I've written a transformer decoder and its inference engine from the original papers with no reference implementation, then made generation fast enough to be worth using, and done the same for a retrieval pipeline and a 3D convolutional network for video. Reading a paper and implementing it are different kinds of understanding and I only trust the second. Efficiency became interesting the same way: caching and quantization stop being abstractions once you've watched your own code run out of memory.</p>
+
+      <p>Outside the detection work I follow language models and multimodal systems closely, particularly how much capability you can pull out of a small model instead of a large one.</p>
+    </div>
+  </div>
+</section>
+
+<section id="work">
+  <div class="wrap">
+    <p class="eyebrow rv">Selected work</p>
+    <h2 class="rv">Four things I've built.</h2>
+    <p class="sub rv">Every number below is measured, not estimated. Where I don't have the data for a chart, there isn't one.</p>
+
+    <div class="grid">
+
+      <article class="card rv">
+        <div class="card-top">
+          <h3>SRC-Net — cross-generator detection of AI-generated images</h3>
+          <span class="badge">Amazon · 2026</span>
+        </div>
+        <p>Detectors for synthetic imagery tend to memorise one generator's artifacts and degrade sharply on an unfamiliar source. I set out to measure how much of the reported performance was real.</p>
+        <p>Part of the answer was uncomfortable. Preprocessing differences between real and generated images — compression, crop, resolution — were doing some of the work models were being credited for. I built benchmarks that control for those confounds, re-evaluated the field's baselines against them, then trained SRC-Net: a frozen CLIP backbone adapted by parameter-efficient fine-tuning, so the pretrained representation stays intact.</p>
+        <div class="tags">
+          <span class="tag">PyTorch</span><span class="tag">CLIP</span><span class="tag">PEFT</span>
+          <span class="tag">benchmark design</span><span class="tag">robustness</span>
+        </div>
+      </article>
+
+      <article class="card rv">
+        <div class="card-top">
+          <h3>LLM inference engine, from scratch</h3>
+          <span class="badge">open source</span>
+        </div>
+        <p>A full autoregressive transformer decoder written from the original papers with no reference implementation: attention, feed-forward blocks, rotary positional embeddings, the sampling loop.</p>
+        <p>The interesting part was making generation fast. A KV-cache means restructuring the whole decode path around what can be reused between tokens, and that constraint is where most of the learning was.</p>
+        <figure>
+          <figcaption>Effect of KV-caching</figcaption>
+          <p class="fig-note">Indexed to 100 without caching. Lower is better.</p>
+          <svg class="chart" viewBox="0 0 560 128" role="img" aria-label="With KV-caching, latency falls to 35 and memory to 60, indexed to 100 without caching">
+            <line class="axis" x1="104" y1="14" x2="104" y2="110"/>
+            <text class="glab-group" x="92" y="34">Latency</text>
+            <path class="bar-mute" d="M104,22 H448.0 Q452.0,22 452.0,26 V34 Q452.0,38 448.0,38 H104 Z"/>
+            <text class="vlab-mute" x="461" y="34">100</text>
+            <path class="bar-accent" d="M104,40 H221.8 Q225.8,40 225.8,44 V52 Q225.8,56 221.8,56 H104 Z"/>
+            <text class="vlab" x="235" y="52">35</text>
+            <text class="glab-group" x="92" y="88">Memory</text>
+            <path class="bar-mute" d="M104,76 H448.0 Q452.0,76 452.0,80 V88 Q452.0,92 448.0,92 H104 Z"/>
+            <text class="vlab-mute" x="461" y="88">100</text>
+            <path class="bar-accent" d="M104,94 H308.8 Q312.8,94 312.8,98 V106 Q312.8,110 308.8,110 H104 Z"/>
+            <text class="vlab" x="322" y="106">60</text>
+          </svg>
+          <div class="legend">
+            <span><i class="key key-mute"></i> without KV-cache</span>
+            <span><i class="key key-accent"></i> with KV-cache</span>
+          </div>
+          <table>
+              <thead><tr><th>Measure</th><th>No cache</th><th>KV-cache</th><th>Change</th></tr></thead>
+              <tbody>
+                <tr><td>Latency</td><td>100</td><td>35</td><td>−65%</td></tr>
+                <tr><td>Memory</td><td>100</td><td>60</td><td>−40%</td></tr>
+              </tbody>
+            </table>
+        </figure>
+        <div class="tags"><span class="tag">Python</span><span class="tag">PyTorch</span><span class="tag">RoPE</span><span class="tag">KV-cache</span></div>
+        <a class="repo" href="https://github.com/raahul4004/llama2-from-scratch">
+          View repository
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+        </a>
+      </article>
+
+      <article class="card rv">
+        <div class="card-top">
+          <h3>Retrieval-augmented generation for document QA</h3>
+          <span class="badge">open source</span>
+        </div>
+        <p>A retrieval pipeline over corpora of 500+ pages, pairing dense-embedding search with a generative model so answers stay grounded in retrieved passages instead of invented.</p>
+        <p>Most of the gain came from ablations rather than a better model. Chunk size and embedding strategy moved retrieval quality and latency more than anything else I tried.</p>
+        <figure>
+          <figcaption>Retrieval latency, before and after ablations</figcaption>
+          <p class="fig-note">Tuned on 200+ held-out queries at 94% passage relevance.</p>
+          <svg class="chart" viewBox="0 0 560 72" role="img" aria-label="Retrieval latency fell from 2,300 milliseconds to 180 milliseconds after tuning ablations">
+            <line class="axis" x1="104" y1="14" x2="104" y2="61"/>
+            <path class="bar-mute" d="M104,22 H448.0 Q452.0,22 452.0,26 V34 Q452.0,38 448.0,38 H104 Z"/>
+            <text class="vlab" x="461" y="34">2,300 ms</text>
+            <text class="glab" x="92" y="34">Initial</text>
+            <path class="bar-accent" d="M104,40 H127.2 Q131.2,40 131.2,44 V52 Q131.2,56 127.2,56 H104 Z"/>
+            <text class="vlab" x="140" y="52">180 ms</text>
+            <text class="glab" x="92" y="52">Tuned</text>
+          </svg>
+          <div class="legend">
+            <span><i class="key key-mute"></i> before tuning</span>
+            <span><i class="key key-accent"></i> after tuning</span>
+          </div>
+          <table>
+              <thead><tr><th>Configuration</th><th>Retrieval latency</th></tr></thead>
+              <tbody><tr><td>Initial</td><td>2,300 ms</td></tr><tr><td>Tuned</td><td>180 ms</td></tr></tbody>
+            </table>
+        </figure>
+        <div class="tags"><span class="tag">Hugging Face</span><span class="tag">dense retrieval</span><span class="tag">ablations</span></div>
+        <a class="repo" href="https://github.com/raahul4004/rag-from-scratch">
+          View repository
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+        </a>
+      </article>
+
+      <article class="card rv">
+        <div class="card-top">
+          <h3>Real-time violence detection in video</h3>
+          <span class="badge">open source</span>
+        </div>
+        <p>A 3D convolutional network classifying continuous surveillance video, modelling motion across frames rather than judging stills independently. Frame extraction, temporal windowing, augmentation, batched GPU inference.</p>
+        <p>It held up across varied lighting, camera angle, and partial occlusion, which is where single-frame approaches tend to break.</p>
+        <div class="tiles">
+          <div class="tile"><span class="tile-v" data-count="92" data-dec="0">92<span class="tile-u">%</span></span><span class="tile-l">Test accuracy</span></div>
+          <div class="tile"><span class="tile-v" data-count="8" data-dec="0" data-plus="1">+8<span class="tile-u">%</span></span><span class="tile-l">Out-of-distribution robustness</span></div>
+        </div>
+        <div class="tags"><span class="tag">PyTorch Lightning</span><span class="tag">OpenCV</span><span class="tag">3D CNN</span></div>
+        <a class="repo" href="https://github.com/raahul4004/Real-Life-Violence-Detection">
+          View repository
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+        </a>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+
+<section id="path">
+  <div class="wrap">
+    <p class="eyebrow rv">Experience &amp; education</p>
+    <h2 class="rv">The path so far.</h2>
+    <div class="tl rv">
+      <div class="tl-item now">
+        <div class="tl-top"><h3>Applied Scientist Intern</h3><span class="tl-when">May 2026 — present</span></div>
+        <p class="tl-where">Amazon · VISTA</p>
+        <p class="d">Leading an independent research thread on cross-generator generalization. Surveyed the literature, found reported accuracy wasn't transferring to unseen sources, designed the study to isolate why, and took the result from prototype to a production-level system.</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><h3>MS, Artificial Intelligence &amp; Machine Learning</h3><span class="tl-when">2025 — 2028</span></div>
+        <p class="tl-where">Vellore Institute of Technology · GPA 9.63/10</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><h3>BSc, Data Science &amp; Analytics</h3><span class="tl-when">2022 — 2025</span></div>
+        <p class="tl-where">R. A. Podar College · GPA 10.0/10</p>
+      </div>
+      <div class="tl-item">
+        <div class="tl-top"><h3>Competitions</h3></div>
+        <p class="tl-where">Kaggle NeuroGolf Championship, IJCAI-ECAI 2026 · Amazon ML Challenge</p>
+        <p class="d">Top 24% in the NeuroGolf model-compression track. All India rank 38 of 10,000+ teams in the Amazon ML Challenge.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap">
+    <p class="eyebrow rv">Toolkit</p>
+    <h2 class="rv">What I work with.</h2>
+    <div class="skills">
+      <div class="sk rv"><h4>Research areas</h4><p>Computer vision, multimodal and vision-language models, natural language understanding, robustness under distribution shift, deep learning</p></div>
+      <div class="sk rv"><h4>Languages</h4><p>Python, C/C++, SQL</p></div>
+      <div class="sk rv"><h4>Frameworks</h4><p>PyTorch, PyTorch Lightning, Hugging Face Transformers, Scikit-learn, OpenCV, NumPy, Pandas</p></div>
+      <div class="sk rv"><h4>Methods</h4><p>Transformers, 3D convolutional networks, self-supervised learning, PEFT / LoRA, distillation, quantization, pruning</p></div>
+      <div class="sk rv"><h4>Practice</h4><p>Experimental design, benchmark construction, ablation studies, large-scale data processing, reproducibility, cloud GPU training, Git, Linux</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <p>Open to research and ML engineering roles. Anywhere, including remote.</p>
+    <div class="foot-links">
+      <a href="mailto:raahul4004@gmail.com">Email</a>
+      <a href="https://github.com/raahul4004">GitHub</a>
+      <a href="https://linkedin.com/in/raahul404">LinkedIn</a>
+      <a href="assets/resume.pdf">Résumé</a>
+    </div>
+  </div>
+</footer>
+
+<div id="toast">Email copied</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- theme ---------- */
+  var root = document.documentElement;
+  try{ var st = localStorage.getItem("theme"); if(st) root.setAttribute("data-theme", st); }catch(e){}
+  document.getElementById("theme").addEventListener("click", function(){
+    var isDark = root.getAttribute("data-theme") === "dark" ||
+      (!root.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+    var next = isDark ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try{ localStorage.setItem("theme", next); }catch(e){}
+
+  });
+
+  /* ---------- scroll progress + nav state ---------- */
+  var nav = document.getElementById("nav"), bar = document.getElementById("bar");
+  var links = [].slice.call(document.querySelectorAll(".nav-links a"));
+  function onScroll(){
+    var h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.width = (h > 0 ? (scrollY / h) * 100 : 0) + "%";
+    nav.classList.toggle("stuck", scrollY > 8);
+    var best = null;
+    links.forEach(function(a){
+      var t = document.querySelector(a.getAttribute("href"));
+      if (t && t.getBoundingClientRect().top <= 140) best = a;
+    });
+    links.forEach(function(a){ a.classList.toggle("active", a === best); });
+  }
+  addEventListener("scroll", onScroll, {passive:true});
+  onScroll();
+
+  /* ---------- reveal + count-up ---------- */
+  /* Count-up is decoration over a number that is already correct in the HTML.
+     The exact value is restored by a timer that does not depend on animation
+     frames firing — if rAF is throttled, backgrounded, or the tab is hidden
+     mid-flight, the tile still ends on the real figure rather than whatever
+     partial number the last frame happened to paint. */
+  function countUp(el){
+    var target = parseFloat(el.dataset.count),
+        dec = parseInt(el.dataset.dec, 10) || 0,
+        plus = el.dataset.plus ? "+" : "",
+        unit = el.querySelector(".tile-u"),
+        suffix = unit ? unit.outerHTML : "",
+        exact = plus + target.toFixed(dec) + suffix,
+        dur = 900, t0 = null, settled = false;
+    function settle(){
+      if (settled) return;
+      settled = true;
+      el.innerHTML = exact;
+    }
+    function frame(ts){
+      if (settled) return;
+      if (t0 === null) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      if (p >= 1) return settle();
+      el.innerHTML = plus + (target * (1 - Math.pow(1 - p, 3))).toFixed(dec) + suffix;
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    setTimeout(settle, dur + 120);   // the guarantee
+  }
+  if ("IntersectionObserver" in window && !reduce){
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in");
+        [].forEach.call(en.target.querySelectorAll("[data-count]"), function(n){
+          if (!n.dataset.done){ n.dataset.done = "1"; countUp(n); }
+        });
+        io.unobserve(en.target);
+      });
+    }, {threshold:.16, rootMargin:"0px 0px -8% 0px"});
+    [].forEach.call(document.querySelectorAll(".rv, figure"), function(el){ io.observe(el); });
+  } else {
+    [].forEach.call(document.querySelectorAll(".rv, figure"), function(el){ el.classList.add("in"); });
+  }
+
+  /* ---------- copy email ---------- */
+  var toast = document.getElementById("toast");
+  document.getElementById("copy").addEventListener("click", function(){
+    var mail = "raahul4004@gmail.com";
+    function ok(){ toast.classList.add("show"); setTimeout(function(){ toast.classList.remove("show"); }, 1800); }
+    if (navigator.clipboard) navigator.clipboard.writeText(mail).then(ok, ok);
+    else ok();
+  });
+
+
+})();
+</script>
+</body>
+</html>
